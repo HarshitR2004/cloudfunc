@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: cloudfunc-postgres
+    environment:
+      POSTGRES_USER: cloudfunc
+      POSTGRES_PASSWORD: cloudfunc
+      POSTGRES_DB: cloudfunc
+    ports:
+      - "5432:5432"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: cloudfunc-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  api-gateway:
+    build: ./api_gateway
+    container_name: cloudfunc-api
+    ports:
+      - "8000:8000"
+    environment:
+      - REGISTRY_URL=http://function-registry:7000
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  scheduler:
+    build: ./scheduler
+    container_name: cloudfunc-scheduler
+    ports:
+      - "9000:9000"
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  container-manager:
+    build: ./container_manager
+    container_name: cloudfunc-container-manager
+    depends_on:
+      - rabbitmq
+
+  function-registry:
+    build: ./function_registry
+    container_name: cloudfunc-registry
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+
