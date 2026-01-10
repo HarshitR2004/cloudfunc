@@ -8,6 +8,11 @@ services:
       POSTGRES_DB: cloudfunc
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cloudfunc -d cloudfunc"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -15,6 +20,11 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   api-gateway:
     build: ./api_gateway
@@ -24,8 +34,10 @@ services:
     environment:
       - REGISTRY_URL=http://function-registry:7000
     depends_on:
-      - postgres
-      - rabbitmq
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
   scheduler:
     build: ./scheduler
@@ -33,22 +45,33 @@ services:
     ports:
       - "9000:9000"
     environment:
+      - REGISTRY_URL=http://function-registry:7000
       - RABBITMQ_HOST=rabbitmq
     depends_on:
-      - postgres
-      - rabbitmq
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
   container-manager:
     build: ./container_manager
     container_name: cloudfunc-container-manager
+    volumes:
+    - //var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - RABBITMQ_HOST=rabbitmq
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
 
   function-registry:
     build: ./function_registry
     container_name: cloudfunc-registry
+    ports:
+      - "7000:7000"
     env_file:
       - .env
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
