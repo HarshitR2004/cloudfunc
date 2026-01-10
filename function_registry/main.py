@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
-from sqlalchemy.orm import Session
-from db import SessionLocal
-from repo import register_function, get_function, update_warm_status
+from db import SessionLocal, engine
+from repo import register_function, get_function
+from models import Base
 
 app = FastAPI(title="Function Registry")
 
@@ -11,6 +11,10 @@ def get_db():
         yield db
     finally:
         db.close()
+        
+@app.on_event("startup")
+def init_db():
+    Base.metadata.create_all(bind=engine)
 
 @app.post("/functions")
 def create_function(data: dict):

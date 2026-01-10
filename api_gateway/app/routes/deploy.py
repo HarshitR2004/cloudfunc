@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from app.schemas.function import DeployRequest
 from app.registry_client import register_function
+
 router = APIRouter()
 
 @router.post("/deploy")

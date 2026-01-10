@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from app.schemas import ScheduleRequest
 from app.queue import publish_invocation
 from app.registry_client import fetch_function
@@ -10,9 +10,11 @@ def schedule(req: ScheduleRequest):
     fn = fetch_function(req.function)
 
     if not fn:
-        return {"error": "Function not found"}  # defensive
+        raise HTTPException(
+            status_code=404,
+            detail="Function not registered"
+        )
 
-    # Phase 4: always enqueue
     publish_invocation({
         "function": req.function,
         "payload": req.payload
@@ -20,10 +22,12 @@ def schedule(req: ScheduleRequest):
 
     return {
         "message": "Invocation scheduled",
-        "function": req.function
+        "function": req.function,
+        "warm": fn["is_warm"]
     }
 
 @app.get("/health")
 def health():
     return {"status": "scheduler-ok"}
+
 

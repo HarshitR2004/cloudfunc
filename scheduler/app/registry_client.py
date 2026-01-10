@@ -1,17 +1,21 @@
-from sqlalchemy.orm import Session
-from function_registry.db import SessionLocal
-from function_registry.repo import get_function
+import requests
+import os
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+REGISTRY_URL = os.getenv(
+    "REGISTRY_URL",
+    "http://function-registry:7000"
+)
 
-def fetch_function(name: str):
-    db = SessionLocal()
+def fetch_function(function_name: str):
     try:
-        return get_function(db, name)
-    finally:
-        db.close()
+        resp = requests.get(
+            f"{REGISTRY_URL}/functions/{function_name}",
+            timeout=2
+        )
+        if resp.status_code == 404:
+            return None
+        resp.raise_for_status()
+        return resp.json()
+    except requests.RequestException as e:
+        raise RuntimeError(f"Registry unreachable: {e}")
+
