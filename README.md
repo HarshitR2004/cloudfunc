@@ -1,6 +1,6 @@
 # CloudFunc - Serverless Function Platform
 
-CloudFunc is a lightweight, self-hosted serverless function platform that enables developers to deploy and execute functions in isolated Docker containers. It implements a microservices architecture with intelligent container lifecycle management, including warm container optimization to reduce cold start latency.
+CloudFunc is a lightweight, serverless function platform that enables developers to deploy and execute functions in isolated Docker containers. It implements a microservices architecture with intelligent container lifecycle management, including warm container optimization to reduce cold start latency.
 
 ## Table of Contents
 

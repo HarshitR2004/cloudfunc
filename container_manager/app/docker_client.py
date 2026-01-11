@@ -6,10 +6,10 @@ client = docker.from_env()
 def start_container(image: str, payload: dict):
     return client.containers.run(
         image,
-        command=["sleep", "infinity"],
         detach=True,
         auto_remove=False,
-        environment={"EVENT": json.dumps(payload)}
+        stdin_open=True,
+        tty=False
     )
 
 def stop_container(container):
@@ -22,9 +22,18 @@ def stop_container(container):
         print(f"Error stopping container: {e}")
 
 def invoke_container(container, payload):
-    container.reload()  # Ensure container still exists
-    result = container.exec_run(
-        cmd=["sh", "-c", f"EVENT='{json.dumps(payload)}' python handler.py"],
-    )
-    return result
+    try:
+        container.reload()
+        socket = container.attach_socket(params={'stdin': 1, 'stream': 1})
+        socket._sock.sendall((json.dumps(payload) + '\n').encode('utf-8'))
+        socket.close()
+        
+        import time
+        time.sleep(0.5) 
+        logs = container.logs(tail=10).decode('utf-8')
+        print(f"Function output:\n{logs}", flush=True)
+        
+    except Exception as e:
+        print(f"Error invoking container: {e}", flush=True)
+
 

@@ -1,10 +1,7 @@
 FROM python:3.10-slim
 
 WORKDIR /app
-COPY handler.py .
-COPY runner.py .
 
-ENV PYTHONUNBUFFERED=1
+COPY runner.py /app/runner.py
 
 CMD ["python", "runner.py"]
-
