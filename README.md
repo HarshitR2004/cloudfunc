@@ -8,6 +8,7 @@ CloudFunc is a lightweight, serverless function platform that enables developers
 - [Architecture](#architecture)
 - [Components](#components)
 - [Features](#features)
+- [Quick Start Example](#quick-start-example)
 
 ## Overview
 
@@ -107,5 +108,91 @@ CloudFunc implements an intelligent container lifecycle management system:
 - All function invocations are processed asynchronously via RabbitMQ
 - Non-blocking API responses
 - Reliable message delivery with acknowledgments
+
+## Quick Start Example
+
+This example demonstrates how to deploy and invoke the `hello_fn` function using the CloudFunc CLI.
+
+### Prerequisites
+
+1. Ensure all services are running:
+```bash
+docker compose up --build
+```
+
+2. Install CLI dependencies:
+```bash
+cd cli
+pip install click requests
+```
+
+### Deploy the Function
+
+The `hello_fn` function is a simple greeter that takes a name and returns a personalized greeting.
+
+**Function Code** (`hello_fn/function.py`):
+```python
+def handler(event):
+    return f"Hello {event.get('name', 'World')}!"
+```
+
+Deploy the function:
+```bash
+python cli/cloudfunc.py deploy hello_fn
+```
+
+This will:
+- Build the Docker image using the Python runtime
+- Register the function with the function registry
+- Make it available for invocation
+
+### Invoke the Function
+
+**Example 1: Basic invocation**
+```bash
+python cli/cloudfunc.py invoke hello_fn --data '{"name":"Alice"}'
+```
+
+**Example 2: Without a name (uses default)**
+```bash
+python cli/cloudfunc.py invoke hello_fn --data '{}'
+```
+
+**Example 3: Multiple invocations (demonstrating warm start)**
+```bash
+python cli/cloudfunc.py invoke hello_fn --data '{"name":"Bob"}'
+python cli/cloudfunc.py invoke hello_fn --data '{"name":"Charlie"}'
+python cli/cloudfunc.py invoke hello_fn --data '{"name":"Diana"}'
+```
+
+The first invocation will experience a cold start (container creation), while subsequent invocations within 60 seconds will use the warm container for faster execution.
+
+### View Function Output
+
+To see the function execution results and logs:
+```bash
+docker logs cloudfunc-container-manager -f
+```
+
+You should see output similar to:
+```
+Cold start for hello_fn
+Container started: a1b2c3d4e5f6
+Executing hello_fn with payload {'name': 'Alice'}
+Function output:
+CloudFunc Python runtime started
+Hello Alice!
+Successfully invoked hello_fn
+ContainerManager created for hello_fn. Cleanup in 60s.
+```
+
+### Understanding the Workflow
+
+1. **CLI** sends deploy/invoke request to **API Gateway** (port 8000)
+2. **API Gateway** registers the function in **Function Registry** (port 7000)
+3. **Scheduler** (port 9000) receives invocation and publishes to **RabbitMQ**
+4. **Container Manager** consumes the message and executes the function in a Docker container
+5. Function output is printed to container-manager logs
+6. Container remains warm for 60 seconds for subsequent invocations
 
 
