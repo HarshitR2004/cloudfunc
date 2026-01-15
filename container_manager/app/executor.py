@@ -6,7 +6,6 @@ from container_manager import ContainerManager
 
 def execute_function(message: dict):
     try:
-        print(message)
         function_name = message.get("function")
         payload = message.get("payload")
 
@@ -19,13 +18,12 @@ def execute_function(message: dict):
 
         if manager:
             print(f"Warm start for {function_name}")
-            manager.reset_timer() # <-- This is the fix!
+            manager.reset_timer() 
             container = manager.get_container()
         else:
             print(f"Cold start for {function_name}")
             try:
                 container = start_container(image=function_name, payload=payload)
-                # Create and store the manager, which starts its own timer
                 manager = ContainerManager(function_name, container)
                 set_warm_container(function_name, manager)
                 mark_warm(function_name, True)
